@@ -25,7 +25,7 @@ import org.olap4j.mdx.*;
 
 import junit.framework.*;
 
-import org.apache.commons.dbcp.*;
+import org.apache.commons.dbcp2.*;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -103,7 +103,10 @@ public class TestContext implements TestEnv {
      */
     private static void addTck(TestSuite suite) {
         for (Class<?> tckClass : TCK_CLASSES) {
-            suite.addTestSuite(tckClass);
+            @SuppressWarnings("unchecked")
+            Class<? extends TestCase> tcClass =
+                (Class<? extends TestCase>) tckClass;
+            suite.addTestSuite(tcClass);
         }
     }
 

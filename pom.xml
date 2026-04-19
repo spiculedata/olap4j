@@ -53,7 +53,7 @@ limitations under the License.
         <role>developer</role>
       </roles>
       <timezone>-8</timezone>
-      <properties />
+      <properties/>
     </developer>
     <developer>
       <id>lucboudreau</id>
@@ -64,7 +64,7 @@ limitations under the License.
         <role>developer</role>
       </roles>
       <timezone>-5</timezone>
-      <properties />
+      <properties/>
     </developer>
     <developer>
       <id>buggtb</id>
@@ -75,13 +75,12 @@ limitations under the License.
         <role>developer</role>
       </roles>
       <timezone>0</timezone>
-      <properties />
+      <properties/>
     </developer>
   </developers>
 
   <prerequisites>
-    <maven>3.2.1</maven>
-    <!-- prerequisite of some plugins -->
+    <maven>3.6.3</maven>
   </prerequisites>
 
   <modules>
@@ -94,53 +93,33 @@ limitations under the License.
   <scm>
     <connection>scm:git:git://github.com/olap4j/olap4j.git</connection>
     <developerConnection>scm:git:git@github.com:olap4j/olap4j.git</developerConnection>
-    <url>http://github.com/olap4j/olap4j/tree/master</url>
+    <url>https://github.com/olap4j/olap4j/tree/master</url>
   </scm>
 
-  <issueManagement />
-
-  <distributionManagement>
-    <repository>
-      <uniqueVersion>false</uniqueVersion>
-      <id>pentaho</id>
-      <name>Pentaho Open Repository</name>
-      <url>http://repository.pentaho.org/artifactory/pentaho</url>
-      <layout>default</layout>
-    </repository>
-  </distributionManagement>
+  <issueManagement/>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
 
     <!-- Dependency and plugin versions (in alphabetical order). -->
-    <apache-rat-plugin.version>0.11</apache-rat-plugin.version>
-    <commons-collections.version>3.2</commons-collections.version>
-    <commons-dbcp.version>1.4</commons-dbcp.version>
-    <commons-dbcp2.version>2.1</commons-dbcp2.version>
-    <commons-logging.version>1.2</commons-logging.version>
-    <commons-math.version>1.2</commons-math.version>
-    <commons-pool.version>1.1</commons-pool.version>
-    <commons-vfs.version>1.0</commons-vfs.version>
+    <apache-rat-plugin.version>0.16.1</apache-rat-plugin.version>
+    <commons-dbcp2.version>2.12.0</commons-dbcp2.version>
     <foodmart-data-hsqldb.version>0.4</foodmart-data-hsqldb.version>
-    <hsqldb.version>2.3.1</hsqldb.version>
-    <junit.version>3.8</junit.version>
-    <maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
-    <maven-dependency-plugin.version>2.8</maven-dependency-plugin.version>
-    <maven-javadoc-plugin.version>2.8.1</maven-javadoc-plugin.version>
-    <maven-replacer-plugin.version>1.4.0</maven-replacer-plugin.version>
-    <maven-source-plugin.version>2.2.1</maven-source-plugin.version>
-    <maven-surefire-plugin.version>2.17</maven-surefire-plugin.version>
+    <hsqldb.version>2.7.3</hsqldb.version>
+    <junit.version>5.11.3</junit.version>
+    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+    <maven-dependency-plugin.version>3.8.1</maven-dependency-plugin.version>
+    <maven-javadoc-plugin.version>3.11.1</maven-javadoc-plugin.version>
+    <maven-replacer-plugin.version>1.4.1</maven-replacer-plugin.version>
+    <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
     <!-- A reference implementation of Mondrian for testing.
          Other versions of Mondrian will be able to work on olap4j. -->
-    <mondrian.version>4.6-olap4j2-SNAPSHOT</mondrian.version>
-    <rt-java5.version>1.5.0_22</rt-java5.version>
-    <rt-java6.version>1.6.0_24</rt-java6.version>
-    <rt-java7.version>1.7.0_15</rt-java7.version>
-    <ph-javacc-maven-plugin.version>2.8.0</ph-javacc-maven-plugin.version>
-    <servlet-api.version>2.4</servlet-api.version>
-    <sortpom-maven-plugin.version>2.4.0</sortpom-maven-plugin.version>
-    <xerces.version>2.11.0</xerces.version>
-    <build-helper-maven-plugin.version>1.9</build-helper-maven-plugin.version>
+    <mondrian.version>4.8.0.0-SAIKU</mondrian.version>
+    <ph-javacc-maven-plugin.version>4.1.5</ph-javacc-maven-plugin.version>
+    <sortpom-maven-plugin.version>4.0.0</sortpom-maven-plugin.version>
+    <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
   </properties>
 
   <!-- Dependencies. -->
@@ -162,29 +141,19 @@ limitations under the License.
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.sun</groupId>
-        <artifactId>rt-jdk1.5</artifactId>
-        <version>${rt-java5.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>net.java.openjdk</groupId>
-        <artifactId>rt-java6</artifactId>
-        <version>${rt-java6.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>xerces</groupId>
-        <artifactId>xercesImpl</artifactId>
-        <version>${xerces.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
       </dependency>
       <dependency>
-        <groupId>commons-dbcp</groupId>
-        <artifactId>commons-dbcp</artifactId>
-        <version>${commons-dbcp.version}</version>
+        <groupId>org.junit.vintage</groupId>
+        <artifactId>junit-vintage-engine</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-dbcp2</artifactId>
+        <version>${commons-dbcp2.version}</version>
       </dependency>
       <dependency>
         <groupId>org.hsqldb</groupId>
@@ -203,16 +172,6 @@ limitations under the License.
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <repositories>
-    <repository>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>pentaho</id>
-      <url>http://repo.pentaho.org/artifactory/repo/</url>
-    </repository>
-  </repositories>
 
   <build>
     <pluginManagement>
@@ -294,8 +253,7 @@ limitations under the License.
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
+          <release>${maven.compiler.release}</release>
         </configuration>
       </plugin>
       <plugin>
@@ -326,7 +284,7 @@ limitations under the License.
         <version>${maven-javadoc-plugin.version}</version>
         <configuration>
           <links>
-            <link>http://docs.oracle.com/javase/7/docs/api/</link>
+            <link>https://docs.oracle.com/en/java/javase/21/docs/api/</link>
           </links>
         </configuration>
       </plugin>

@@ -20,17 +20,23 @@ package org.olap4j.driver.xmla;
 import org.olap4j.metadata.Hierarchy;
 import org.olap4j.metadata.XmlaConstant;
 
-import org.apache.xerces.impl.Constants;
-import org.apache.xerces.parsers.DOMParser;
-import org.apache.xml.serialize.OutputFormat;
-import org.apache.xml.serialize.XMLSerializer;
-
 import org.w3c.dom.*;
 import org.xml.sax.*;
 
 import java.io.*;
 import java.math.*;
 import java.util.*;
+
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 /**
  * Utility methods for the olap4j driver for XML/A.
@@ -60,93 +66,56 @@ abstract class XmlaOlap4jUtil {
     static final String XSD_NS = "http://www.w3.org/2001/XMLSchema";
     static final String XMLNS = "xmlns";
 
-    static final String NAMESPACES_FEATURE_ID =
-        "http://xml.org/sax/features/namespaces";
-    static final String VALIDATION_FEATURE_ID =
-        "http://xml.org/sax/features/validation";
-    static final String SCHEMA_VALIDATION_FEATURE_ID =
-        "http://apache.org/xml/features/validation/schema";
-    static final String FULL_SCHEMA_VALIDATION_FEATURE_ID =
-        "http://apache.org/xml/features/validation/schema-full-checking";
-    static final String DEFER_NODE_EXPANSION =
-        "http://apache.org/xml/features/dom/defer-node-expansion";
-    static final String SCHEMA_LOCATION =
-        Constants.XERCES_PROPERTY_PREFIX + Constants.SCHEMA_LOCATION;
-
     /**
      * Parse a stream into a Document (no validation).
-     *
      */
     static Document parse(byte[] in)
         throws SAXException, IOException
     {
         InputSource source = new InputSource(new ByteArrayInputStream(in));
 
-        DOMParser parser = getParser(null, null, false);
+        DocumentBuilder parser;
         try {
-            parser.parse(source);
-            checkForParseError(parser);
+            parser = newDocumentBuilder();
+        } catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+        ErrorHandlerImpl errorHandler = new ErrorHandlerImpl();
+        parser.setErrorHandler(errorHandler);
+        Document document;
+        try {
+            document = parser.parse(source);
+            checkForParseError(errorHandler, null);
         } catch (SAXParseException ex) {
-            checkForParseError(parser, ex);
+            checkForParseError(errorHandler, ex);
+            throw ex;
         }
-
-        return parser.getDocument();
+        return document;
     }
 
-    /**
-     * Get your non-cached DOM parser which can be configured to do schema
-     * based validation of the instance Document.
-     *
-     */
-    static DOMParser getParser(
-        String schemaLocationPropertyValue,
-        EntityResolver entityResolver,
-        boolean validate)
-        throws SAXNotRecognizedException, SAXNotSupportedException
+    private static DocumentBuilder newDocumentBuilder()
+        throws ParserConfigurationException
     {
-        boolean doingValidation =
-            (validate || (schemaLocationPropertyValue != null));
-
-        DOMParser parser = new DOMParser();
-
-        parser.setEntityResolver(entityResolver);
-        parser.setErrorHandler(new ErrorHandlerImpl());
-        parser.setFeature(DEFER_NODE_EXPANSION, false);
-        parser.setFeature(NAMESPACES_FEATURE_ID, true);
-        parser.setFeature(SCHEMA_VALIDATION_FEATURE_ID, doingValidation);
-        parser.setFeature(VALIDATION_FEATURE_ID, doingValidation);
-
-        if (schemaLocationPropertyValue != null) {
-            parser.setProperty(
-                SCHEMA_LOCATION,
-                schemaLocationPropertyValue.replace('\\', '/'));
-        }
-
-        return parser;
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        factory.setFeature(
+            XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature(
+            "http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setExpandEntityReferences(false);
+        return factory.newDocumentBuilder();
     }
 
     /**
-     * Checks whether the DOMParser after parsing a Document has any errors and,
-     * if so, throws a RuntimeException exception containing the errors.
+     * Checks the ErrorHandlerImpl after parsing and, if errors were
+     * collected, throws a RuntimeException containing the errors.
      */
-    static void checkForParseError(DOMParser parser, Throwable t) {
-        final ErrorHandler errorHandler = parser.getErrorHandler();
-
-        if (errorHandler instanceof ErrorHandlerImpl) {
-            final ErrorHandlerImpl saxEH = (ErrorHandlerImpl) errorHandler;
-            final List<ErrorInfo> errors = saxEH.getErrors();
-
-            if (errors != null && errors.size() > 0) {
-                String errorStr = ErrorHandlerImpl.formatErrorInfos(saxEH);
-                throw new RuntimeException(errorStr, t);
-            }
-        } else {
-            System.out.println("errorHandler=" + errorHandler);
+    static void checkForParseError(ErrorHandlerImpl handler, Throwable t) {
+        final List<ErrorInfo> errors = handler.getErrors();
+        if (errors != null && errors.size() > 0) {
+            String errorStr = ErrorHandlerImpl.formatErrorInfos(handler);
+            throw new RuntimeException(errorStr, t);
         }
-    }
-
-    static void checkForParseError(final DOMParser parser) {
-        checkForParseError(parser, null);
     }
 
     static List<Node> listOf(final NodeList nodeList) {
@@ -428,59 +397,38 @@ abstract class XmlaOlap4jUtil {
             return null;
         }
         try {
-            Document doc = node.getOwnerDocument();
-            OutputFormat format;
-            if (doc != null) {
-                format = new OutputFormat(doc, null, prettyPrint);
-            } else {
-                format = new OutputFormat("xml", null, prettyPrint);
+            if (node instanceof Text) {
+                return ((Text) node).getData();
             }
-            if (prettyPrint) {
-                format.setLineSeparator(LINE_SEP);
-            } else {
-                format.setLineSeparator("");
-            }
-            StringWriter writer = new StringWriter(1000);
-            XMLSerializer serial = new XMLSerializer(writer, format);
-            serial.asDOMSerializer();
-            if (node instanceof Document) {
-                serial.serialize((Document) node);
-            } else if (node instanceof Element) {
-                format.setOmitXMLDeclaration(true);
-                serial.serialize((Element) node);
-            } else if (node instanceof DocumentFragment) {
-                format.setOmitXMLDeclaration(true);
-                serial.serialize((DocumentFragment) node);
-            } else if (node instanceof Text) {
-                Text text = (Text) node;
-                return text.getData();
-            } else if (node instanceof Attr) {
+            if (node instanceof Attr) {
                 Attr attr = (Attr) node;
-                String name = attr.getName();
-                String value = attr.getValue();
-                writer.write(name);
-                writer.write("=\"");
-                writer.write(value);
-                writer.write("\"");
+                StringBuilder out = new StringBuilder();
+                out.append(attr.getName()).append("=\"")
+                    .append(attr.getValue()).append('"');
                 if (prettyPrint) {
-                    writer.write(LINE_SEP);
+                    out.append(LINE_SEP);
                 }
-            } else {
-                writer.write("node class = " + node.getClass().getName());
-                if (prettyPrint) {
-                    writer.write(LINE_SEP);
-                } else {
-                    writer.write(' ');
-                }
-                writer.write("XmlUtil.toString: fix me: ");
-                writer.write(node.toString());
-                if (prettyPrint) {
-                    writer.write(LINE_SEP);
-                }
+                return out.toString();
             }
+            TransformerFactory factory = TransformerFactory.newInstance();
+            factory.setFeature(
+                XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            Transformer transformer = factory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(
+                OutputKeys.OMIT_XML_DECLARATION,
+                node instanceof Document ? "no" : "yes");
+            transformer.setOutputProperty(
+                OutputKeys.INDENT, prettyPrint ? "yes" : "no");
+            if (prettyPrint) {
+                transformer.setOutputProperty(
+                    "{http://xml.apache.org/xslt}indent-amount", "2");
+            }
+            StringWriter writer = new StringWriter(1024);
+            transformer.transform(
+                new DOMSource(node), new StreamResult(writer));
             return writer.toString();
-        } catch (Exception ex) {
-            // ignore
+        } catch (TransformerException ex) {
             return null;
         }
     }
